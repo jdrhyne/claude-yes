@@ -7,12 +7,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let automationEngine = AutomationEngine()
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        print("Claude Yes: Starting up...")
         setupMenuBar()
         setupPopover()
         checkAccessibilityPermissions()
         
         // Hide dock icon since this is a menu bar app
         NSApp.setActivationPolicy(.accessory)
+        print("Claude Yes: Menu bar app ready!")
     }
     
     private func checkAccessibilityPermissions() {

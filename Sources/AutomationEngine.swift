@@ -62,6 +62,13 @@ class AutomationEngine: ObservableObject {
         guard case .running = state else { return }
         
         let terminalOutput = terminalService.getTerminalOutput()
+        
+        // Debug output (only show if there's actual content)
+        if !terminalOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            print("Claude Yes: Terminal output detected")
+            print("Claude Yes: Output length: \(terminalOutput.count) characters")
+        }
+        
         let decision = decisionEngine.analyzeOutput(terminalOutput)
         
         switch decision {
@@ -71,14 +78,19 @@ class AutomationEngine: ObservableObject {
                 return
             }
             
+            print("Claude Yes: Sending proceed command (count: \(proceedCount + 1))")
             terminalService.sendProceedCommand()
             proceedCount += 1
             
         case .pause(let reason):
+            print("Claude Yes: Pausing - \(reason)")
             pause(reason: reason)
             
         case .ignore:
-            break
+            // Only log if we actually got content
+            if !terminalOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                print("Claude Yes: Ignoring output (no matching patterns)")
+            }
         }
     }
     
