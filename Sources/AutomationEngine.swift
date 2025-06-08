@@ -33,6 +33,7 @@ class AutomationEngine: ObservableObject {
         
         state = .running
         proceedCount = 0
+        decisionEngine.clearHistory()  // Clear history when starting fresh
         startMonitoring()
     }
     
@@ -65,9 +66,27 @@ class AutomationEngine: ObservableObject {
         let terminalOutput = terminalService.getTerminalOutput()
         
         // Debug output (only show if there's actual content)
-        if !terminalOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        let trimmedOutput = terminalOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedOutput.isEmpty {
             print("Claude Yes: Terminal output detected")
             print("Claude Yes: Output length: \(terminalOutput.count) characters")
+            
+            // Show last 500 chars AND look for proceed patterns in the entire output
+            let preview = String(trimmedOutput.suffix(500))
+            print("Claude Yes: Output preview (last 500 chars): '\(preview)'")
+            
+            // Also check if "proceed" appears anywhere in the full output
+            if trimmedOutput.lowercased().contains("proceed") {
+                print("Claude Yes: Found 'proceed' in output!")
+                // Find the line with "proceed" and show it
+                let lines = trimmedOutput.components(separatedBy: .newlines)
+                for line in lines.reversed() {
+                    if line.lowercased().contains("proceed") {
+                        print("Claude Yes: Proceed line: '\(line.trimmingCharacters(in: .whitespaces))'")
+                        break
+                    }
+                }
+            }
         }
         
         let decision = decisionEngine.analyzeOutput(terminalOutput)

@@ -31,11 +31,20 @@ class TerminalService {
     
     private func getActiveTerminalApp() -> String? {
         guard let frontmostApp = NSWorkspace.shared.frontmostApplication else {
+            print("Claude Yes: No frontmost application found")
             return nil
         }
         
         let appName = frontmostApp.localizedName ?? ""
-        return supportedTerminals.contains(appName) ? appName : nil
+        print("Claude Yes: Frontmost app is '\(appName)'")
+        
+        if supportedTerminals.contains(appName) {
+            print("Claude Yes: Using terminal app: \(appName)")
+            return appName
+        } else {
+            print("Claude Yes: App '\(appName)' is not a supported terminal")
+            return nil
+        }
     }
     
     private func getTerminalAppOutput() -> String {
@@ -73,14 +82,21 @@ class TerminalService {
         
         switch app {
         case "Terminal":
+            // For Terminal.app, we need to send actual keystrokes, not run a command
             script = """
             tell application "Terminal"
                 if (count of windows) > 0 then
-                    do script "\(text)" in selected tab of front window
+                    tell application "System Events"
+                        tell process "Terminal"
+                            keystroke "\(text.replacingOccurrences(of: "\n", with: ""))"
+                            keystroke return
+                        end tell
+                    end tell
                 end if
             end tell
             """
         case "iTerm2", "iTerm":
+            // For iTerm, write text includes the return character
             script = """
             tell application "iTerm"
                 if (count of windows) > 0 then
@@ -94,6 +110,7 @@ class TerminalService {
             return
         }
         
+        print("Claude Yes: Sending keystrokes '\(text)' to \(app)")
         executeAppleScript(script)
     }
     

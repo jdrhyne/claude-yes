@@ -48,6 +48,8 @@ struct MenuBarView: View {
                     
                     if case .paused = automationEngine.state {
                         Button("Resume") {
+                            // Clear history and resume from fresh state
+                            automationEngine.state = .idle
                             automationEngine.start()
                         }
                         .buttonStyle(.bordered)

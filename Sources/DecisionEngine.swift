@@ -10,30 +10,46 @@ class DecisionEngine {
     private var outputHistory: [String] = []
     private let maxHistorySize = 10
     
+    func clearHistory() {
+        outputHistory.removeAll()
+        print("Claude Yes: Decision engine history cleared")
+    }
+    
     func analyzeOutput(_ output: String) -> DecisionResult {
         // Store output in history for loop detection
         addToHistory(output)
         
-        // Check for loop patterns
-        if detectLoop() {
-            return .pause(reason: "Potential loop detected - similar outputs repeated")
+        // Debug: Print what we're analyzing
+        if !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            print("Claude Yes: Analyzing output for patterns...")
         }
+        
+        // TEMPORARILY DISABLE loop detection to debug other issues
+        // if detectLoop() {
+        //     return .pause(reason: "Potential loop detected - similar outputs repeated")
+        // }
         
         // Check for specific user input requests
         if detectUserInputRequired(output) {
+            print("Claude Yes: DETECTED user input required")
             return .pause(reason: "User input required")
         }
         
         // Check for task completion indicators
         if detectTaskCompletion(output) {
+            print("Claude Yes: DETECTED task completion")
             return .pause(reason: "Task appears to be complete")
         }
         
         // Check for proceed prompts
         if detectProceedPrompt(output) {
+            print("Claude Yes: DETECTED proceed prompt")
             return .proceed
         }
         
+        if !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            print("Claude Yes: No patterns matched - ignoring")
+        }
         return .ignore
     }
     
@@ -45,13 +61,14 @@ class DecisionEngine {
     }
     
     private func detectLoop() -> Bool {
-        guard outputHistory.count >= 3 else { return false }
+        guard outputHistory.count >= 5 else { return false }
         
-        let recent = Array(outputHistory.suffix(3))
+        let recent = Array(outputHistory.suffix(5))
         let similarity = calculateSimilarity(between: recent)
         
-        // If the last 3 outputs are very similar, likely a loop
-        return similarity > 0.8
+        // Only detect as loop if last 5 outputs are VERY similar (>95%)
+        // This prevents false positives from similar prompts
+        return similarity > 0.95
     }
     
     private func calculateSimilarity(between outputs: [String]) -> Double {
@@ -158,29 +175,43 @@ class DecisionEngine {
     private func detectProceedPrompt(_ output: String) -> Bool {
         let lowercased = output.lowercased()
         
-        // Common proceed prompt patterns
+        // Common proceed prompt patterns (more specific to claude-code)
         let proceedPatterns = [
             "continue?",
             "proceed?",
+            "do you want to proceed",
             "would you like to proceed",
             "should i continue",
-            "press 1 to",
-            "1) yes",
-            "1) continue",
-            "1) proceed",
-            "[1]",
-            "(1)"
+            "should i proceed", 
+            "continue with",
+            "shall i continue",
+            "shall i proceed",
+            "want to proceed"
         ]
         
-        // Must contain a proceed pattern and some form of confirmation option
+        // Must contain a proceed pattern
         let hasProceedPattern = proceedPatterns.contains { pattern in
             lowercased.contains(pattern)
         }
         
-        let hasConfirmationOption = lowercased.contains("1") || 
-                                  lowercased.contains("yes") || 
-                                  lowercased.contains("y/n")
+        // Must also have some confirmation mechanism
+        let hasConfirmationOption = lowercased.contains("1)") || 
+                                  lowercased.contains("[1]") ||
+                                  lowercased.contains("(1)") ||
+                                  lowercased.contains("1) yes") ||
+                                  lowercased.contains("(y/n)") ||
+                                  lowercased.contains("y/n") ||
+                                  lowercased.contains("1 -") ||
+                                  lowercased.contains("1:") ||
+                                  lowercased.contains("1 ") ||
+                                  (lowercased.contains("proceed") && lowercased.contains("1"))
         
-        return hasProceedPattern && hasConfirmationOption
+        let result = hasProceedPattern && hasConfirmationOption
+        
+        if result {
+            print("Claude Yes: DETECTED PROCEED PROMPT in: '\(String(output.suffix(100)))'")
+        }
+        
+        return result
     }
 }
