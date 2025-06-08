@@ -6,27 +6,79 @@ class TerminalService {
     private let supportedTerminals = ["Terminal", "iTerm2", "iTerm"]
     
     func getTerminalOutput() -> String {
-        guard let activeTerminal = getActiveTerminalApp() else {
-            return ""
+        // Check all terminal windows for claude-code sessions
+        var allOutput = ""
+        
+        // Check Terminal.app windows
+        let terminalOutput = getAllTerminalAppOutput()
+        if !terminalOutput.isEmpty {
+            allOutput += terminalOutput + "\n"
         }
         
-        switch activeTerminal {
-        case "Terminal":
-            return getTerminalAppOutput()
-        case "iTerm2", "iTerm":
-            return getITermOutput()
-        default:
-            return ""
+        // Check iTerm windows  
+        let iTermOutput = getAllITermOutput()
+        if !iTermOutput.isEmpty {
+            allOutput += iTermOutput + "\n"
         }
+        
+        return allOutput
     }
     
     func sendProceedCommand() {
-        guard let activeTerminal = getActiveTerminalApp() else {
-            return
-        }
+        // Send to all terminal windows that might have claude sessions
+        sendProceedToAllTerminalWindows()
+        sendProceedToAllITermWindows()
+    }
+    
+    private func sendProceedToAllTerminalWindows() {
+        let script = """
+        tell application "Terminal"
+            if (count of windows) > 0 then
+                repeat with w from 1 to count of windows
+                    try
+                        set windowOutput to contents of selected tab of window w
+                        if windowOutput contains "claude" and (windowOutput contains "proceed" or windowOutput contains "Continue") then
+                            tell application "System Events"
+                                tell process "Terminal"
+                                    set frontmost to true
+                                    click window w
+                                    keystroke "1"
+                                    keystroke return
+                                end tell
+                            end tell
+                        end if
+                    end try
+                end repeat
+            end if
+        end tell
+        """
         
-        // Send "1" followed by Enter
-        sendKeystrokes("1\n", to: activeTerminal)
+        executeAppleScript(script)
+    }
+    
+    private func sendProceedToAllITermWindows() {
+        let script = """
+        tell application "iTerm"
+            if (count of windows) > 0 then
+                repeat with w from 1 to count of windows
+                    try
+                        repeat with t from 1 to count of tabs in window w
+                            try
+                                set sessionOutput to contents of session 1 of tab t of window w
+                                if sessionOutput contains "claude" and (sessionOutput contains "proceed" or sessionOutput contains "Continue") then
+                                    tell session 1 of tab t of window w
+                                        write text "1"
+                                    end tell
+                                end if
+                            end try
+                        end repeat
+                    end try
+                end repeat
+            end if
+        end tell
+        """
+        
+        executeAppleScript(script)
     }
     
     private func getActiveTerminalApp() -> String? {
@@ -47,6 +99,27 @@ class TerminalService {
         }
     }
     
+    private func getAllTerminalAppOutput() -> String {
+        let script = """
+        tell application "Terminal"
+            set allOutput to ""
+            if (count of windows) > 0 then
+                repeat with w from 1 to count of windows
+                    try
+                        set windowOutput to contents of selected tab of window w
+                        if windowOutput contains "claude" then
+                            set allOutput to allOutput & "WINDOW_" & w & ": " & windowOutput & return
+                        end if
+                    end try
+                end repeat
+            end if
+            return allOutput
+        end tell
+        """
+        
+        return executeAppleScript(script)
+    }
+    
     private func getTerminalAppOutput() -> String {
         let script = """
         tell application "Terminal"
@@ -55,6 +128,31 @@ class TerminalService {
             else
                 return ""
             end if
+        end tell
+        """
+        
+        return executeAppleScript(script)
+    }
+    
+    private func getAllITermOutput() -> String {
+        let script = """
+        tell application "iTerm"
+            set allOutput to ""
+            if (count of windows) > 0 then
+                repeat with w from 1 to count of windows
+                    try
+                        repeat with t from 1 to count of tabs in window w
+                            try
+                                set sessionOutput to contents of session 1 of tab t of window w
+                                if sessionOutput contains "claude" then
+                                    set allOutput to allOutput & "WINDOW_" & w & "_TAB_" & t & ": " & sessionOutput & return
+                                end if
+                            end try
+                        end repeat
+                    end try
+                end repeat
+            end if
+            return allOutput
         end tell
         """
         

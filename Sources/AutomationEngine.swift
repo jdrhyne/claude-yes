@@ -12,10 +12,12 @@ class AutomationEngine: ObservableObject {
     @Published var state: AutomationState = .idle
     @Published var maxProceeds: Int = 50
     @Published var proceedCount: Int = 0
+    @Published var activeSessions: Int = 0
     
     private var timer: Timer?
     private let terminalService = TerminalService()
     private let decisionEngine = DecisionEngine()
+    private var lastProcessedOutput: String = ""
     
     var statusText: String {
         switch state {
@@ -33,6 +35,7 @@ class AutomationEngine: ObservableObject {
         
         state = .running
         proceedCount = 0
+        lastProcessedOutput = ""  // Clear last processed output
         decisionEngine.clearHistory()  // Clear history when starting fresh
         startMonitoring()
     }
@@ -44,8 +47,16 @@ class AutomationEngine: ObservableObject {
     
     func pause(reason: String) {
         state = .paused(reason: reason)
-        stopMonitoring()
+        // Don't stop monitoring - keep watching for auto-resume opportunities
         sendNotification(title: "Claude Yes: Attention Required", body: reason)
+    }
+    
+    func autoResume() {
+        // Reset proceed count and resume monitoring
+        proceedCount = 0
+        state = .running
+        sendNotification(title: "Claude Yes: Auto-Resumed", body: "New task detected - proceed count reset to 0")
+        print("Claude Yes: Auto-resumed with proceed count reset to 0")
     }
     
     private func startMonitoring() {
@@ -61,13 +72,28 @@ class AutomationEngine: ObservableObject {
     }
     
     private func checkTerminal() {
-        guard case .running = state else { return }
+        // Continue monitoring even when paused to detect auto-resume opportunities
+        switch state {
+        case .running, .paused:
+            break // Continue processing
+        case .idle:
+            return // Don't process when idle
+        }
         
         let terminalOutput = terminalService.getTerminalOutput()
+        
+        // Skip if we've already processed this exact output
+        if terminalOutput == lastProcessedOutput {
+            return
+        }
         
         // Debug output (only show if there's actual content)
         let trimmedOutput = terminalOutput.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedOutput.isEmpty {
+            // Count how many claude sessions we found
+            let claudeWindows = terminalOutput.components(separatedBy: "WINDOW_").count - 1
+            activeSessions = claudeWindows
+            print("Claude Yes: Found \(claudeWindows) claude sessions across all terminal windows")
             print("Claude Yes: Terminal output detected")
             print("Claude Yes: Output length: \(terminalOutput.count) characters")
             
@@ -89,10 +115,14 @@ class AutomationEngine: ObservableObject {
             }
         }
         
+        lastProcessedOutput = terminalOutput
         let decision = decisionEngine.analyzeOutput(terminalOutput)
         
         switch decision {
         case .proceed:
+            // Only proceed if we're in running state
+            guard case .running = state else { return }
+            
             if maxProceeds > 0 && proceedCount >= maxProceeds {
                 pause(reason: "Maximum proceed limit of \(maxProceeds) reached")
                 return
@@ -106,9 +136,13 @@ class AutomationEngine: ObservableObject {
             print("Claude Yes: Pausing - \(reason)")
             pause(reason: reason)
             
+        case .autoResume:
+            print("Claude Yes: Auto-resuming - new task detected")
+            autoResume()
+            
         case .ignore:
-            // Only log if we actually got content
-            if !terminalOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            // Only log if we actually got content and we're running
+            if case .running = state, !terminalOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 print("Claude Yes: Ignoring output (no matching patterns)")
             }
         }

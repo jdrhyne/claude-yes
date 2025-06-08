@@ -3,15 +3,18 @@ import Foundation
 enum DecisionResult: Equatable {
     case proceed
     case pause(reason: String)
+    case autoResume
     case ignore
 }
 
 class DecisionEngine {
     private var outputHistory: [String] = []
     private let maxHistorySize = 10
+    private var wasLastTaskComplete = false
     
     func clearHistory() {
         outputHistory.removeAll()
+        wasLastTaskComplete = false
         print("Claude Yes: Decision engine history cleared")
     }
     
@@ -38,7 +41,15 @@ class DecisionEngine {
         // Check for task completion indicators
         if detectTaskCompletion(output) {
             print("Claude Yes: DETECTED task completion")
+            wasLastTaskComplete = true
             return .pause(reason: "Task appears to be complete")
+        }
+        
+        // Check if user manually continued after task completion (auto-resume)
+        if wasLastTaskComplete && detectNewTaskStarted(output) {
+            print("Claude Yes: DETECTED new task started - auto-resuming")
+            wasLastTaskComplete = false
+            return .autoResume
         }
         
         // Check for proceed prompts
@@ -213,5 +224,44 @@ class DecisionEngine {
         }
         
         return result
+    }
+    
+    private func detectNewTaskStarted(_ output: String) -> Bool {
+        let lowercased = output.lowercased()
+        
+        // Patterns that indicate a new task has started
+        let newTaskPatterns = [
+            "i'll help you",
+            "i can help",
+            "let me help",
+            "sure, i can",
+            "i'll implement",
+            "i'll create",
+            "i'll add",
+            "i'll build",
+            "let's implement",
+            "let's create",
+            "let's add",
+            "let's build",
+            "what would you like",
+            "how can i help",
+            "what do you need",
+            "what should we",
+            "i'll start by",
+            "let me start",
+            "first, i'll",
+            "i understand you want",
+            "i'll work on"
+        ]
+        
+        let hasNewTaskPattern = newTaskPatterns.contains { pattern in
+            lowercased.contains(pattern)
+        }
+        
+        if hasNewTaskPattern {
+            print("Claude Yes: DETECTED new task pattern in: '\(String(output.suffix(100)))'")
+        }
+        
+        return hasNewTaskPattern
     }
 }

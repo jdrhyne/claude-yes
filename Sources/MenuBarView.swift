@@ -16,10 +16,18 @@ struct MenuBarView: View {
             }
             
             // Status
-            Text(automationEngine.statusText)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(automationEngine.statusText)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                if automationEngine.activeSessions > 0 {
+                    Text("Monitoring \(automationEngine.activeSessions) claude session\(automationEngine.activeSessions == 1 ? "" : "s")")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             // Controls
             VStack(spacing: 12) {
@@ -30,6 +38,13 @@ struct MenuBarView: View {
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 60)
                         .disabled(automationEngine.state != .idle)
+                    
+                    Button("Reset") {
+                        automationEngine.maxProceeds = 50
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.mini)
+                    .disabled(automationEngine.state != .idle)
                 }
                 
                 HStack(spacing: 12) {
