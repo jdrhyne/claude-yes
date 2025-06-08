@@ -1,145 +1,189 @@
-# Claude Yes
+# Claude Yes 🤖✅
 
-A lightweight, native macOS menu bar utility that automates interacting with command-line AI tools like claude-code.
+A lightweight, native macOS menu bar utility that automates interacting with command-line AI tools like [claude-code](https://github.com/anthropics/claude-code).
 
-## Overview
+![Swift](https://img.shields.io/badge/Swift-5.10-orange.svg)
+![macOS](https://img.shields.io/badge/macOS-14.0+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-Claude Yes automatically responds to confirmation prompts in your terminal, allowing for unattended task execution while intelligently detecting when user input is needed.
+## 🎯 Overview
 
-## Features
+Claude Yes automatically responds to confirmation prompts in your terminal, allowing for unattended task execution while intelligently detecting when user input is needed. No more sitting and waiting to type "1" or "yes" every time your AI assistant asks to proceed!
 
-- **Menu Bar Interface**: Simple control panel living in your macOS menu bar
-- **Smart Automation**: Automatically sends "1" or "yes" to proceed prompts
-- **Intelligent Pausing**: Detects when specific user input is needed and pauses
-- **Loop Detection**: Identifies repetitive patterns and prevents infinite loops
-- **Customizable Limits**: Set maximum auto-replies to prevent runaway execution
-- **Native macOS App**: Built with Swift and SwiftUI for optimal performance
+### 🚀 Key Features
 
-## Requirements
+- **🖥️ Menu Bar Native**: Lives quietly in your macOS menu bar
+- **🤖 Smart Automation**: Automatically sends "1" to proceed prompts
+- **🛑 Intelligent Pausing**: Detects when specific user input is needed
+- **🔄 Loop Detection**: Prevents infinite loops by detecting repetitive patterns
+- **⚙️ Customizable Limits**: Set max auto-replies (default: 50)
+- **🔔 Notifications**: Alerts you when attention is needed
+- **🏃 Lightweight**: Minimal resource usage, native Swift implementation
+
+## 📋 Requirements
 
 - macOS 14.0 (Sonoma) or newer
+- Terminal.app or iTerm2
 - Accessibility permissions (for terminal interaction)
 
-## Installation & Development
+## 🛠️ Installation
 
-### Building from Source
+### Option 1: Build from Source
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/jdrhyne/claude-yes.git
-   cd claude-yes
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/jdrhyne/claude-yes.git
+cd claude-yes
 
-2. **Build the project**:
-   ```bash
-   swift build
-   ```
+# Build and run
+swift build
+swift run
+```
 
-3. **Run tests** (optional):
-   ```bash
-   swift test
-   ```
+### Option 2: Download Release (Coming Soon)
 
-4. **Launch the app**:
+Pre-built releases will be available on the [Releases](https://github.com/jdrhyne/claude-yes/releases) page.
+
+## 🚦 Quick Start
+
+1. **Launch Claude Yes**
    ```bash
    swift run
    ```
+
+2. **Look for the icon** in your menu bar (●✓)
+
+3. **Click the icon** and click "Start"
+
+4. **Use claude-code** normally - Claude Yes will handle the prompts!
+
+## 🔧 Configuration
 
 ### Setting Up Permissions
 
-When you first run Claude Yes, it will request Accessibility permissions:
+On first launch, Claude Yes needs Accessibility permissions:
 
-1. The app will show a dialog explaining the need for permissions
-2. Click "Open System Settings" 
-3. Go to **Privacy & Security → Accessibility**
-4. Add Claude Yes to the list of allowed apps
+1. A dialog will appear explaining the permissions
+2. Click "Open System Settings"
+3. Navigate to **Privacy & Security → Accessibility**
+4. Enable Claude Yes
 5. Restart the app
 
-### Local Testing & Debugging
+### Menu Bar Controls
 
-#### Testing with a Simple Script
+- **Max Proceeds**: Set the maximum number of auto-responses (0 = unlimited)
+- **Start/Stop**: Toggle automation on/off
+- **Status Display**: Shows current state and proceed count
 
-Create a test script to simulate claude-code prompts:
+## 🧪 Testing & Development
+
+### Test with Included Script
 
 ```bash
-# Create test script
-cat > test_prompts.sh << 'EOF'
-#!/bin/bash
-echo "I'll help you implement this feature."
-echo "Continue? 1) Yes 2) No"
-read -p "Enter choice: " choice
-echo "You chose: $choice"
-
-echo ""
-echo "What is the name of the component?"
-read -p "Component name: " name
-echo "Component name: $name"
-
-echo ""
-echo "Implementation complete! Please test the functionality."
-echo "Continue? (y/n)"
-read -p "Enter choice: " final
-echo "Final choice: $final"
-EOF
-
-chmod +x test_prompts.sh
+# Run the test script
+./test_prompts.sh
 ```
 
-#### Testing Workflow
+This simulates claude-code interaction patterns to verify functionality.
 
-1. **Start Claude Yes**:
+### Understanding the Pattern Detection
+
+Claude Yes detects several types of prompts:
+
+**✅ Auto-Proceed Patterns:**
+- `Continue? 1) Yes 2) No`
+- `Proceed? (y/n)`
+- `Should I continue? [1] Yes`
+
+**🛑 Pause Patterns:**
+- `What is the name of...?`
+- `Which file should I...?`
+- `Please enter the...`
+- `Implementation complete!`
+- Repeated similar outputs (loop detection)
+
+### Debug Mode
+
+Run with debug output visible:
+```bash
+swift run
+# Watch the terminal for detailed logs
+```
+
+## 🐛 Troubleshooting
+
+### "I don't see the menu bar icon"
+
+1. Check if the app is running:
    ```bash
-   swift run
+   ps aux | grep claude-yes
    ```
 
-2. **Open a new terminal** and run the test script:
+2. Look for overflow menu (>>) if you have many menu bar items
+
+3. Try building in release mode:
    ```bash
-   ./test_prompts.sh
+   swift build -c release
+   .build/release/claude-yes
    ```
 
-3. **Click the Claude Yes menu bar icon** and click "Start"
+### "The app crashes when clicking Start"
 
-4. **Watch the automation**:
-   - Should automatically respond "1" to the first prompt
-   - Should pause and notify you for the "What is the name" question
-   - Should pause for the completion message
+1. Ensure Terminal.app or iTerm2 is open
+2. Check Accessibility permissions are granted
+3. Run in debug mode to see error messages
 
-#### Debugging Tips
+### "It's not detecting my terminal"
 
-- **Check Console.app** for any error messages from Claude Yes
-- **Terminal output**: The app prints debug info to the terminal where you ran `swift run`
-- **Notification Center**: Watch for Claude Yes notifications when it pauses
-- **Menu bar icon**: Changes color/style based on state (idle/running/paused)
+- Currently supports Terminal.app and iTerm2
+- Make sure the terminal window is active/focused
+- Check Console.app for AppleScript errors
 
-#### Testing with Real Claude Code
+## 🤝 Contributing
 
-1. Start Claude Yes (`swift run`)
-2. In another terminal, start a claude-code session
-3. Click "Start" in Claude Yes menu bar
-4. Begin a task with claude-code that requires multiple confirmations
-5. Observe the automation and pausing behavior
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
-## Usage
+### Development Setup
 
-1. Launch Claude Yes - the icon appears in your menu bar
-2. Click the icon to open the control panel
-3. Set your preferred "Max Proceeds" limit (default: 50)
-4. Click "Start" to begin automation
-5. The app will monitor your terminal and auto-respond to proceed prompts
+```bash
+# Run tests
+swift test
 
-The app will pause and notify you when:
-- A specific question requires your input
-- A potential loop is detected
-- The task appears to be complete
-- The proceed limit is reached
+# Format code (if you have swift-format)
+swift-format -i Sources/**/*.swift
 
-## Development
+# Build for release
+swift build -c release
+```
 
-Built with:
-- Swift 5.10+
-- SwiftUI
-- macOS Accessibility APIs
+## 📝 Known Issues & Limitations
 
-## License
+- **App Bundle**: Currently runs as a CLI tool, not a full app bundle
+- **Notifications**: Using deprecated NSUserNotification API (works without bundle)
+- **Terminal Support**: Only Terminal.app and iTerm2 (VS Code terminal coming soon)
+- **Pattern Detection**: May need tuning for specific use cases
 
-*License information to be added*
+## 🗺️ Roadmap
+
+- [ ] Support for more terminal emulators (Alacritty, Kitty, VS Code)
+- [ ] Configurable patterns via settings
+- [ ] Time-based limits in addition to count limits
+- [ ] Export/import pattern configurations
+- [ ] Full app bundle with code signing
+- [ ] Homebrew formula for easy installation
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details
+
+## 🙏 Acknowledgments
+
+- Built for use with [claude-code](https://github.com/anthropics/claude-code)
+- Inspired by the need for better AI tool automation
+- Thanks to the Swift and macOS developer community
+
+---
+
+**Made with ❤️ for the AI-assisted development community**
+
+*If you find this tool useful, please consider starring the repository!*
