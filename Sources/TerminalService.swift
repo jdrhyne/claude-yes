@@ -99,6 +99,7 @@ class TerminalService {
     
     private func executeAppleScript(_ script: String) -> String {
         guard let appleScript = NSAppleScript(source: script) else {
+            print("Claude Yes: Failed to create AppleScript")
             return ""
         }
         
@@ -106,7 +107,8 @@ class TerminalService {
         let result = appleScript.executeAndReturnError(&error)
         
         if let error = error {
-            print("AppleScript error: \(error)")
+            print("Claude Yes: AppleScript error - \(error)")
+            // Don't crash, just return empty
             return ""
         }
         

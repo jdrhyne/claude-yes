@@ -1,6 +1,6 @@
 import Foundation
 import Combine
-import UserNotifications
+import Cocoa
 
 enum AutomationState: Equatable {
     case idle
@@ -51,6 +51,7 @@ class AutomationEngine: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             self?.checkTerminal()
         }
+        print("Claude Yes: Started monitoring terminal")
     }
     
     private func stopMonitoring() {
@@ -95,21 +96,15 @@ class AutomationEngine: ObservableObject {
     }
     
     private func sendNotification(title: String, body: String) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-        
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil
-        )
-        
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Notification error: \(error)")
-            }
+        // Use NSUserNotification for now (deprecated but works without app bundle)
+        DispatchQueue.main.async {
+            let notification = NSUserNotification()
+            notification.title = title
+            notification.informativeText = body
+            notification.soundName = NSUserNotificationDefaultSoundName
+            
+            NSUserNotificationCenter.default.deliver(notification)
+            print("Claude Yes: Notification sent - \(title)")
         }
     }
 }

@@ -8,13 +8,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("Claude Yes: Starting up...")
+        
+        // Set up as menu bar app FIRST
+        NSApp.setActivationPolicy(.accessory)
+        
         setupMenuBar()
         setupPopover()
         checkAccessibilityPermissions()
         
-        // Hide dock icon since this is a menu bar app
-        NSApp.setActivationPolicy(.accessory)
+        // Skip notification permissions for now - requires app bundle
+        
         print("Claude Yes: Menu bar app ready!")
+        print("Claude Yes: Status item exists: \(statusItem != nil)")
+        print("Claude Yes: Button exists: \(statusItem?.button != nil)")
+    }
+    
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return false  // Keep app running even if windows are closed
     }
     
     private func checkAccessibilityPermissions() {
@@ -54,10 +64,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "checkmark.circle", accessibilityDescription: "Claude Yes")
+            // Try a different icon that might be more visible
+            if let image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "Claude Yes") {
+                button.image = image
+                button.image?.isTemplate = true  // This makes it adapt to dark/light mode
+                print("Claude Yes: Icon image set successfully")
+            } else {
+                // Fallback to text if image fails
+                button.title = "CY"
+                print("Claude Yes: Using text fallback for icon")
+            }
+            
             button.action = #selector(togglePopover)
             button.target = self
+            
+            print("Claude Yes: Button configured")
+        } else {
+            print("Claude Yes: ERROR - Could not create status bar button!")
         }
+        
+        print("Claude Yes: Menu bar icon created")
+        print("Claude Yes: Status item visible: \(statusItem.isVisible)")
     }
     
     private func setupPopover() {
@@ -70,12 +97,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc private func togglePopover() {
-        if let button = statusItem.button {
-            if popover.isShown {
-                popover.performClose(nil)
-            } else {
-                popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
-            }
+        guard let button = statusItem.button else {
+            print("Claude Yes: ERROR - No button found")
+            return
+        }
+        
+        if popover.isShown {
+            popover.performClose(nil)
+        } else {
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
+            print("Claude Yes: Popover shown")
         }
     }
 }
